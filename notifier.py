@@ -73,6 +73,8 @@ class Notifier:
         })
         if ok:
             logger.info("Notified: %s — %s", listing.source, listing.title[:60])
+        else:
+            logger.error("FAILED to send Telegram notification for: %s — %s", listing.source, listing.title[:60])
 
     def send_text(self, text: str):
         self._telegram_post("sendMessage", {

@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 SEARCH_TERMS = [
     "orient fuori verso",
-    "B15427",
-    "B15428",
+    "orient B15427",
+    "orient B15428",
     "orologio orient asimmetrico",
     "orient dent",
 ]

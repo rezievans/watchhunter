@@ -94,7 +94,13 @@ def build_scrapers(config: dict):
 
 
 def run_check_now(config: dict, db: Database):
-    """Run one poll cycle on all scrapers synchronously, print results. No Telegram."""
+    """Run one poll cycle on all scrapers synchronously. Sends Telegram for new finds."""
+    from notifier import Notifier
+    from monitor import _is_relevant
+    token = config.get("telegram_token", "")
+    chat_id = config.get("telegram_chat_id", "")
+    notifier = Notifier(token, chat_id) if (token and not token.startswith("YOUR")) else None
+
     scrapers = build_scrapers(config)
     print(f"\nRunning one-shot check across {len(scrapers)} scrapers...\n")
     total_new = 0
@@ -105,12 +111,15 @@ def run_check_now(config: dict, db: Database):
         print(f"  [{scraper.name}] checking...", end=" ", flush=True)
         try:
             listings = scraper.fetch()
+            relevant = [l for l in listings if _is_relevant(l.title)]
             new = 0
-            for l in listings:
+            for l in relevant:
                 if db.insert_listing(l):
                     new += 1
                     print(f"\n    NEW: {l.source} | {l.title[:70]} | {l.price} | {l.url}")
-            print(f"{len(listings)} found, {new} new")
+                    if notifier:
+                        notifier._send(l)
+            print(f"{len(listings)} found ({len(relevant)} relevant), {new} new")
             total_new += new
             db.update_source_status(scraper.name, success=True, new_count=new)
         except Exception as e:
