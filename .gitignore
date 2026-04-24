@@ -2,5 +2,7 @@
 __pycache__/
 *.pyc
 watchhunter.db
+watchhunter.db-wal
+watchhunter.db-shm
 watchhunter.log
 config.json
