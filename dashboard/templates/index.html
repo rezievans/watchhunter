@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="refresh" content="60">
+<title>WatchHunter — Orient Fuori Verso</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         background: #0f0f13; color: #e0e0e0; min-height: 100vh; }
+  .header { background: #1a1a24; border-bottom: 1px solid #2a2a3a;
+            padding: 18px 28px; display: flex; align-items: center; gap: 16px; }
+  .header h1 { font-size: 1.3rem; font-weight: 700; color: #fff; letter-spacing: 0.02em; }
+  .header p { font-size: 0.8rem; color: #888; margin-top: 2px; }
+  .badge { background: #2a2a3a; border-radius: 20px; padding: 4px 12px;
+           font-size: 0.75rem; color: #aaa; }
+  .badge span { color: #f0a500; font-weight: 700; }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px 20px; }
+
+  /* Stats row */
+  .stats { display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  .stat-card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px;
+               padding: 18px 24px; flex: 1; min-width: 140px; }
+  .stat-card .num { font-size: 2rem; font-weight: 700; color: #f0a500; }
+  .stat-card .label { font-size: 0.75rem; color: #777; margin-top: 4px; text-transform: uppercase;
+                      letter-spacing: 0.08em; }
+
+  /* Source health grid */
+  h2 { font-size: 0.85rem; font-weight: 600; color: #888; text-transform: uppercase;
+       letter-spacing: 0.1em; margin-bottom: 14px; }
+  .sources { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 32px; }
+  .src { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 10px;
+         padding: 12px 16px; min-width: 170px; }
+  .src.ok { border-left: 3px solid #22c55e; }
+  .src.err { border-left: 3px solid #ef4444; }
+  .src.pending { border-left: 3px solid #555; }
+  .src-name { font-weight: 600; font-size: 0.85rem; }
+  .src-meta { font-size: 0.72rem; color: #666; margin-top: 5px; }
+  .src-count { font-size: 0.72rem; color: #f0a500; margin-top: 2px; }
+  .src-err-msg { font-size: 0.68rem; color: #ef4444; margin-top: 3px;
+                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+
+  /* Listings table */
+  .table-wrap { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: #141420; padding: 12px 16px; text-align: left;
+             font-size: 0.72rem; color: #666; text-transform: uppercase; letter-spacing: 0.08em;
+             border-bottom: 1px solid #2a2a3a; }
+  tbody tr { border-bottom: 1px solid #1e1e2e; transition: background 0.15s; }
+  tbody tr:hover { background: #1e1e2e; }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 11px 16px; font-size: 0.83rem; vertical-align: middle; }
+  td.source { white-space: nowrap; }
+  .src-pill { display: inline-block; background: #2a2a3a; border-radius: 6px;
+              padding: 2px 8px; font-size: 0.72rem; color: #aaa; }
+  td.title { max-width: 380px; }
+  td.title a { color: #e0e0e0; text-decoration: none; }
+  td.title a:hover { color: #f0a500; }
+  td.price { white-space: nowrap; color: #22c55e; font-weight: 600; }
+  td.price.empty { color: #444; font-style: italic; }
+  td.time { white-space: nowrap; color: #555; font-size: 0.75rem; }
+  td.link a { color: #f0a500; font-size: 0.75rem; text-decoration: none; }
+  td.link a:hover { text-decoration: underline; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: #555; }
+  .empty-state p { margin-top: 8px; font-size: 0.85rem; }
+
+  .refresh-note { text-align: right; color: #444; font-size: 0.7rem; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>WatchHunter</h1>
+    <p>Orient Fuori Verso (B15427 / B15428) — Global Monitor</p>
+  </div>
+  <div class="badge">Total: <span>{{ stats.total }}</span></div>
+  <div class="badge">Today: <span>{{ stats.today }}</span></div>
+</div>
+
+<div class="container">
+
+  <div class="stats">
+    <div class="stat-card"><div class="num">{{ stats.total }}</div><div class="label">Total listings found</div></div>
+    <div class="stat-card"><div class="num">{{ stats.today }}</div><div class="label">Found today</div></div>
+    <div class="stat-card"><div class="num">{{ sources | length }}</div><div class="label">Sources monitored</div></div>
+    <div class="stat-card">
+      <div class="num" style="font-size:1.1rem;padding-top:6px">$71–$700</div>
+      <div class="label">Market range (WatchCharts)</div>
+    </div>
+  </div>
+
+  <h2>Source Health</h2>
+  <div class="sources">
+    {% for src in sources %}
+    {% set ok = src.last_error is none or src.last_error == '' %}
+    {% set checked = src.last_checked is not none %}
+    <div class="src {% if not checked %}pending{% elif ok %}ok{% else %}err{% endif %}">
+      <div class="src-name">{{ src.source }}</div>
+      {% if src.last_checked %}
+      <div class="src-meta">Checked: {{ src.last_checked[:16] }}</div>
+      {% else %}
+      <div class="src-meta">Not checked yet</div>
+      {% endif %}
+      <div class="src-count">Found: {{ src.total_found or 0 }} | Errors: {{ src.error_count or 0 }}</div>
+      {% if src.last_error %}
+      <div class="src-err-msg" title="{{ src.last_error }}">{{ src.last_error }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% if not sources %}
+    <div class="src pending"><div class="src-name">No sources checked yet</div><div class="src-meta">Starting up…</div></div>
+    {% endif %}
+  </div>
+
+  <h2>Listings Found</h2>
+  <div class="table-wrap">
+    {% if listings %}
+    <table>
+      <thead>
+        <tr>
+          <th>Source</th>
+          <th>Title</th>
+          <th>Price</th>
+          <th>Search Term</th>
+          <th>Found</th>
+          <th>Link</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in listings %}
+        <tr>
+          <td class="source"><span class="src-pill">{{ l.source }}</span></td>
+          <td class="title">
+            <a href="{{ l.url }}" target="_blank" rel="noopener">{{ l.title[:90] }}{% if l.title|length > 90 %}…{% endif %}</a>
+          </td>
+          <td class="price {% if not l.price %}empty{% endif %}">
+            {{ l.price or '—' }}
+          </td>
+          <td style="color:#666;font-size:0.75rem">{{ l.search_term or '—' }}</td>
+          <td class="time">{{ l.found_at[:16] if l.found_at else '—' }}</td>
+          <td class="link"><a href="{{ l.url }}" target="_blank" rel="noopener">Open →</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <div style="font-size:2rem">👁️</div>
+      <p>No listings found yet — monitoring is running.<br>You'll get a Telegram notification the moment something appears.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="refresh-note">Auto-refreshes every 60 seconds &middot; <a href="/api/listings" style="color:#444">JSON API</a></div>
+
+</div>
+</body>
+</html>
