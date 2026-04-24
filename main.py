@@ -79,6 +79,7 @@ def build_scrapers(config: dict):
     from scrapers.catawiki import CatawikiScraper
     from scrapers.subito import SubitoScraper
     from scrapers.kleinanzeigen import KleinanzeigenScraper
+    from scrapers.instagram import InstagramScraper
 
     return [
         EbayScraper(config),
@@ -90,6 +91,7 @@ def build_scrapers(config: dict):
         CatawikiScraper(config),
         SubitoScraper(config),
         KleinanzeigenScraper(config),
+        InstagramScraper(config),
     ]
 
 
