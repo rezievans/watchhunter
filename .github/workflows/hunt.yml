@@ -1,0 +1,33 @@
+name: WatchHunter
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Restore DB cache
+        uses: actions/cache@v4
+        with:
+          path: watchhunter.db
+          key: watchhunter-db-${{ github.run_id }}
+          restore-keys: |
+            watchhunter-db-
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4 feedparser flask
+
+      - name: Run scraper
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python3 main.py --check-now --no-dashboard
