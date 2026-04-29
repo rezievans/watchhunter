@@ -82,7 +82,14 @@ class InstagramScraper(BaseScraper):
         if "uddg=" in href:
             m = re.search(r"uddg=([^&]+)", href)
             if m:
-                return urllib.parse.unquote(m.group(1))
+                url = urllib.parse.unquote(m.group(1))
+                return self._normalize_ig_url(url)
         if href.startswith("http"):
-            return href
+            return self._normalize_ig_url(href)
         return ""
+
+    def _normalize_ig_url(self, url: str) -> str:
+        # Strip query params and trailing slashes so same post always hashes the same
+        parsed = urllib.parse.urlparse(url)
+        clean = urllib.parse.urlunparse((parsed.scheme, parsed.netloc, parsed.path.rstrip("/"), "", "", ""))
+        return clean
